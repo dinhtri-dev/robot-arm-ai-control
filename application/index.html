@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Robot Control + AI Detection</title>
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ============================================
+           🎨 MODERN DARK THEME WITH AI ACCENTS
+           ============================================ */
+        
+        :root { 
+            --bg: #0a0e27;
+            --panel: #1a1f3a;
+            --panel-hover: #242949;
+            --border: #2d3458;
+            --text: #e8eaf6;
+            --text-secondary: #9fa8da;
+            --accent: #00e5ff;
+            --accent-hover: #00b8d4;
+            --success: #00ff88;
+            --warning: #ffab00;
+            --danger: #ff1744;
+            --ai-glow: rgba(0, 229, 255, 0.3);
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* ============================================
+           📦 PANEL COMPONENTS
+           ============================================ */
+        
+        .panel { 
+            background: var(--panel);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 48px var(--shadow);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-header i {
+            color: var(--accent);
+            font-size: 22px;
+        }
+
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ============================================
+           🎯 AI DETECTION CONTROLS
+           ============================================ */
+
+        .ai-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn-ai {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-ai-start {
+            background: linear-gradient(135deg, var(--success) 0%, #00c853 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-ai-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .btn-ai-stop {
+            background: linear-gradient(135deg, var(--danger) 0%, #d50000 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
+        }
+
+        .btn-ai-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 23, 68, 0.5);
+        }
+
+        .btn-ai:active {
+            transform: scale(0.98);
+        }
+
+        /* ============================================
+           📹 CAMERA SECTION WITH AI OVERLAY
+           ============================================ */
+
+        .camera-box {
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4/3;
+            border: 2px solid var(--border);
+            box-shadow: 0 0 30px var(--ai-glow);
+        }
+
+        .camera-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .cam-overlay {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 23, 68, 0.95);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .detection-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+            padding: 16px;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .detection-count {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .count-badge {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 16px;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .detection-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .detection-item {
+            background: rgba(0, 229, 255, 0.2);
+            border: 1px solid var(--accent);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detection-item i {
+            color: var(--accent);
+        }
+
+        /* ============================================
+           🎮 CONTROL SECTION
+           ============================================ */
+
+        .position-display {
+            display: flex;
+            justify-content: space-around;
+            background: var(--bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .pos-item {
+            text-align: center;
+        }
+
+        .pos-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .pos-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'Courier New', monospace;
+        }
+
+        .speed-control {
+            margin-bottom: 20px;
+        }
+
+        .speed-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+
+        .speed-value {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--ai-glow);
+            transition: transform 0.2s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .controller-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .joystick {
+            display: grid;
+            grid-template: 
+                ". up ." auto
+                "left home right" auto
+                ". down ." auto / 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .joy-btn {
+            width: 70px;
+            height: 70px;
+            border: 2px solid var(--border);
+            background: var(--panel-hover);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent);
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .joy-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--ai-glow);
+        }
+
+        .joy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .joy-btn.home {
+            background: var(--border);
+            cursor: default;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .joy-btn.home:hover {
+            background: var(--border);
+            transform: none;
+        }
+
+        .gripper-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .grip-btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .grip-open {
+            background: linear-gradient(135deg, var(--success) 0%, #00c853 100%);
+            color: white;
+        }
+
+        .grip-close {
+            background: linear-gradient(135deg, var(--warning) 0%, #ff8f00 100%);
+            color: white;
+        }
+
+        .grip-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ============================================
+           📍 PRESET LEVELS
+           ============================================ */
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .level-item {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .level-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .level-inputs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .level-input {
+            width: 100%;
+            padding: 6px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .btn-goto {
+            width: 100%;
+            padding: 8px;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-goto:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        /* ============================================
+           🎯 TEACH POINTS
+           ============================================ */
+
+        .teach-display {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .teach-coords {
+            font-size: 20px;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            color: var(--accent);
+            margin: 8px 0;
+        }
+
+        .teach-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .btn-teach {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-teach i {
+            font-size: 18px;
+        }
+
+        .btn-add { background: var(--success); color: var(--bg); }
+        .btn-clear { background: var(--danger); color: white; }
+        .btn-run { background: var(--accent); color: var(--bg); }
+
+        .btn-teach:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .waypoint-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .wp-item {
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .wp-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .wp-coords {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           📦 ORDER PICKING
+           ============================================ */
+
+        .order-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .order-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 10px;
+            align-items: center;
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .order-item:hover {
+            background: var(--panel-hover);
+            border-color: var(--accent);
+        }
+
+        .chk-box {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .item-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .coord-mini {
+            width: 60px;
+            padding: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .btn-enter {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3);
+        }
+
+        .btn-enter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 229, 255, 0.5);
+        }
+
+        .btn-enter:active {
+            transform: scale(0.98);
+        }
+
+        /* ============================================
+           📜 STATUS LOG
+           ============================================ */
+
+        .status-log {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .log-info { color: var(--accent); }
+        .log-success { color: var(--success); }
+        .log-error { color: var(--danger); }
+
+        /* ============================================
+           📱 RESPONSIVE DESIGN
+           ============================================ */
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .joy-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+            
+            .level-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ============================================
+           🎨 SCROLLBAR STYLING
+           ============================================ */
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================
+     📋 HEADER
+     ============================================ -->
+<div class="header">
+    <h1>
+        <i class="fas fa-robot"></i>
+        ROBOT CONTROL + AI DETECTION
+    </h1>
+    <p>⚡ Real-time Object Detection with YOLOv8</p>
+</div>
+
+<!-- ============================================
+     📦 MAIN CONTAINER
+     ============================================ -->
+<div class="container">
+
+    <!-- ============================================
+         📹 CAMERA + AI DETECTION PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-video"></i>
+                <h3>Camera + AI Detection</h3>
+            </div>
+        </div>
+
+        <!-- AI Controls -->
+        <div class="ai-controls">
+            <button class="btn-ai btn-ai-start" onclick="startDetection()">
+                <i class="fas fa-play"></i>
+                BẬT AI DETECT
+            </button>
+            <button class="btn-ai btn-ai-stop" onclick="stopDetection()">
+                <i class="fas fa-stop"></i>
+                TẮT AI DETECT
+            </button>
+        </div>
+
+        <!-- Camera Feed -->
+        <div class="camera-box">
+            <img class="camera-feed" src="{{ url_for('video_feed') }}" alt="Camera Feed">
+            <div class="cam-overlay">
+                <i class="fas fa-circle"></i>
+                CAM 1 LIVE
+            </div>
+            <div class="detection-overlay" id="detection-info" style="display: none;">
+                <div class="detection-count">
+                    <span>Phát hiện:</span>
+                    <span class="count-badge" id="object-count">0</span>
+                    <span>đối tượng</span>
+                </div>
+                <div class="detection-list" id="detection-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         🎮 ROBOT CONTROL PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-gamepad"></i>
+                <h3>Robot Control</h3>
+            </div>
+        </div>
+
+        <!-- Position Display -->
+        <div class="position-display">
+            <div class="pos-item">
+                <div class="pos-label">X-AXIS</div>
+                <div class="pos-value" id="cur-x">0</div>
+            </div>
+            <div class="pos-item">
+                <div class="pos-label">Y-AXIS</div>
+                <div class="pos-value" id="cur-y">0</div>
+            </div>
+            <div class="pos-item">
+                <div class="pos-label">Z-AXIS</div>
+                <div class="pos-value" id="cur-z">0</div>
+            </div>
+        </div>
+
+        <!-- Speed Control -->
+        <div class="speed-control">
+            <div class="speed-label">
+                <span>STEP SIZE</span>
+                <span class="speed-value"><span id="step-display">10</span> mm</span>
+            </div>
+            <input type="range" min="5" max="50" value="10" step="5" 
+                   oninput="stepVal = this.value; document.getElementById('step-display').innerText = this.value;">
+        </div>
+
+        <!-- Controller Area -->
+        <div class="controller-area">
+            <!-- XY Joystick -->
+            <div class="joystick">
+                <div class="joy-btn" style="grid-area: up" onclick="move('Y', 1)">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="joy-btn" style="grid-area: left" onclick="move('X', -1)">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="joy-btn home" style="grid-area: home">XY</div>
+                <div class="joy-btn" style="grid-area: right" onclick="move('X', 1)">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="joy-btn" style="grid-area: down" onclick="move('Y', -1)">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+            </div>
+
+            <!-- Z Joystick -->
+            <div class="joystick">
+                <div class="joy-btn" style="grid-area: up" onclick="move('Z', 1)">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="joy-btn home" style="grid-area: home">Z</div>
+                <div class="joy-btn" style="grid-area: down" onclick="move('Z', -1)">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+            </div>
+
+            <!-- Gripper Controls -->
+            <div class="gripper-controls">
+                <button class="grip-btn grip-open" onclick="grip('open')">
+                    <i class="fas fa-hand-paper"></i>
+                    MỞ
+                </button>
+                <button class="grip-btn grip-close" onclick="grip('close')">
+                    <i class="fas fa-hand-rock"></i>
+                    ĐÓNG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📍 PRESET LEVELS PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-layer-group"></i>
+                <h3>Preset Levels</h3>
+            </div>
+        </div>
+
+        <div class="level-grid">
+            <div class="level-item">
+                <div class="level-header">
+                    <span class="level-label">LEVEL 1</span>
+                </div>
+                <div class="level-inputs">
+                    <input type="number" class="level-input" id="x1" value="0" placeholder="X">
+                    <input type="number" class="level-input" id="y1" value="0" placeholder="Y">
+                    <input type="number" class="level-input" id="z1" value="0" placeholder="Z">
+                </div>
+                <button class="btn-goto" onclick="goToLevel(1)">
+                    <i class="fas fa-location-arrow"></i> GO
+                </button>
+            </div>
+
+            <div class="level-item">
+                <div class="level-header">
+                    <span class="level-label">LEVEL 2</span>
+                </div>
+                <div class="level-inputs">
+                    <input type="number" class="level-input" id="x2" value="0" placeholder="X">
+                    <input type="number" class="level-input" id="y2" value="50" placeholder="Y">
+                    <input type="number" class="level-input" id="z2" value="0" placeholder="Z">
+                </div>
+                <button class="btn-goto" onclick="goToLevel(2)">
+                    <i class="fas fa-location-arrow"></i> GO
+                </button>
+            </div>
+
+            <div class="level-item">
+                <div class="level-header">
+                    <span class="level-label">LEVEL 3</span>
+                </div>
+                <div class="level-inputs">
+                    <input type="number" class="level-input" id="x3" value="0" placeholder="X">
+                    <input type="number" class="level-input" id="y3" value="100" placeholder="Y">
+                    <input type="number" class="level-input" id="z3" value="0" placeholder="Z">
+                </div>
+                <button class="btn-goto" onclick="goToLevel(3)">
+                    <i class="fas fa-location-arrow"></i> GO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         🎯 TEACH POINTS PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-map-marked-alt"></i>
+                <h3>Teach Points</h3>
+            </div>
+        </div>
+
+        <div class="teach-display">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">CURRENT POSITION</div>
+            <div class="teach-coords">
+                X<span id="teach-x">0</span> Y<span id="teach-y">0</span> Z<span id="teach-z">0</span>
+            </div>
+        </div>
+
+        <div class="teach-actions">
+            <button class="btn-teach btn-add" onclick="teach('add')">
+                <i class="fas fa-plus"></i>
+                ADD
+            </button>
+            <button class="btn-teach btn-clear" onclick="teach('clear')">
+                <i class="fas fa-trash"></i>
+                CLEAR
+            </button>
+            <button class="btn-teach btn-run" onclick="teach('run')">
+                <i class="fas fa-play"></i>
+                RUN
+            </button>
+        </div>
+
+        <div class="waypoint-list" id="wp-list">
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <i class="fas fa-info-circle"></i> Chưa có điểm nào được lưu
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📦 ORDER PICKING PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-boxes"></i>
+                <h3>Order Picking</h3>
+            </div>
+        </div>
+
+        <div class="order-list">
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🥤 Coca chai lớn</span>
+                <input type="number" class="coord-mini inp-x" value="10">
+                <input type="number" class="coord-mini inp-y" value="0">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🥤 Pepsi lon</span>
+                <input type="number" class="coord-mini inp-x" value="50">
+                <input type="number" class="coord-mini inp-y" value="0">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🍋 Sting dâu</span>
+                <input type="number" class="coord-mini inp-x" value="90">
+                <input type="number" class="coord-mini inp-y" value="0">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🥤 Coca chai nhỏ</span>
+                <input type="number" class="coord-mini inp-x" value="130">
+                <input type="number" class="coord-mini inp-y" value="0">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🍊 Fanta chai</span>
+                <input type="number" class="coord-mini inp-x" value="170">
+                <input type="number" class="coord-mini inp-y" value="0">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🎁 Giỏ quà Tết</span>
+                <input type="number" class="coord-mini inp-x" value="10">
+                <input type="number" class="coord-mini inp-y" value="50">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🍜 Hảo Hảo</span>
+                <input type="number" class="coord-mini inp-x" value="50">
+                <input type="number" class="coord-mini inp-y" value="50">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🥫 Khay Coca lon</span>
+                <input type="number" class="coord-mini inp-x" value="90">
+                <input type="number" class="coord-mini inp-y" value="50">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">🥫 Khay Pepsi lon</span>
+                <input type="number" class="coord-mini inp-x" value="130">
+                <input type="number" class="coord-mini inp-y" value="50">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+            <div class="order-item">
+                <input type="checkbox" class="chk-box">
+                <span class="item-name">💧 Nước lọc chai</span>
+                <input type="number" class="coord-mini inp-x" value="170">
+                <input type="number" class="coord-mini inp-y" value="50">
+                <input type="number" class="coord-mini inp-z" value="0">
+            </div>
+        </div>
+
+        <button class="btn-enter" onclick="submitOrder()">
+            <i class="fas fa-play-circle"></i>
+            BẮT ĐẦU PICKING
+        </button>
+    </div>
+
+    <!-- ============================================
+         📜 STATUS LOG PANEL
+         ============================================ -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fas fa-terminal"></i>
+                <h3>System Log</h3>
+            </div>
+        </div>
+
+        <div class="status-log" id="log"></div>
+    </div>
+
+</div>
+
+<!-- ============================================
+     💻 JAVASCRIPT
+     ============================================ -->
+<script>
+    function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// ============================================
+    // 🔌 SOCKET.IO CONNECTION
+    // ============================================
+    var socket = io({auth: {token: window.YEAR2_ARCHIVE_TOKEN}});
+    var stepVal = 10;
+
+    // ============================================
+    // 🎯 AI DETECTION FUNCTIONS
+    // ============================================
+    function startDetection() {
+        socket.emit('start_detection');
+        document.getElementById('detection-info').style.display = 'block';
+    }
+
+    function stopDetection() {
+        socket.emit('stop_detection');
+        document.getElementById('detection-info').style.display = 'none';
+    }
+
+    // Update detection results
+    socket.on('detection_update', function(data) {
+        document.getElementById('object-count').innerText = data.count;
+        
+        var list = document.getElementById('detection-list');
+        list.innerHTML = '';
+        
+        data.objects.forEach(obj => {
+            list.innerHTML += `
+                <div class="detection-item">
+                    <i class="fas fa-cube"></i>
+                    <span>${escapeHtml(obj.class_name)} (${escapeHtml(obj.confidence)}%)</span>
+                </div>
+            `;
+        });
+    });
+
+    // ============================================
+    // 🎮 ROBOT CONTROL
+    // ============================================
+    function move(axis, dir) {
+        if (axis === 'Home') return;
+        socket.emit('control_command', { axis: axis, val: dir * stepVal });
+    }
+
+    function grip(state) {
+        socket.emit('gripper_command', { state: state });
+    }
+
+    // Update position display
+    socket.on('update_pos', function(pos) {
+        document.getElementById('cur-x').innerText = pos.x;
+        document.getElementById('cur-y').innerText = pos.y;
+        document.getElementById('cur-z').innerText = pos.z;
+        
+        document.getElementById('teach-x').innerText = pos.x;
+        document.getElementById('teach-y').innerText = pos.y;
+        document.getElementById('teach-z').innerText = pos.z;
+    });
+
+    // ============================================
+    // 📍 PRESET LEVELS
+    // ============================================
+    function goToLevel(lvl) {
+        var x = document.getElementById('x' + lvl).value;
+        var y = document.getElementById('y' + lvl).value;
+        var z = document.getElementById('z' + lvl).value;
+        socket.emit('goto_absolute', { x: x, y: y, z: z });
+    }
+
+    // ============================================
+    // 🎯 TEACH POINTS
+    // ============================================
+    function teach(action) {
+        socket.emit('teach_action', { action: action });
+    }
+
+    socket.on('update_waypoints', function(wps) {
+        var list = document.getElementById('wp-list');
+        if (wps.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle"></i> Chưa có điểm nào được lưu
+                </div>
+            `;
+        } else {
+            list.innerHTML = "";
+            wps.forEach(pt => {
+                list.innerHTML += `
+                    <div class='wp-item'>
+                        <span class='wp-name'>${escapeHtml(pt.name)}</span>
+                        <span class='wp-coords'>X${escapeHtml(pt.x)} Y${escapeHtml(pt.y)} Z${escapeHtml(pt.z)}</span>
+                    </div>
+                `;
+            });
+            list.scrollTop = list.scrollHeight;
+        }
+    });
+
+    // ============================================
+    // 📦 ORDER PICKING
+    // ============================================
+    function submitOrder() {
+        var items = [];
+        document.querySelectorAll('.order-item').forEach(row => {
+            if (row.querySelector('.chk-box').checked) {
+                items.push({
+                    name: row.querySelector('.item-name').innerText,
+                    x: row.querySelector('.inp-x').value,
+                    y: row.querySelector('.inp-y').value,
+                    z: row.querySelector('.inp-z').value
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            alert('⚠️ Vui lòng chọn ít nhất 1 món hàng!');
+            return;
+        }
+        
+        socket.emit('start_auto_pick', { orders: items });
+    }
+
+    // ============================================
+    // 📜 STATUS LOG
+    // ============================================
+    socket.on('status', function(msg) {
+        var log = document.getElementById('log');
+        var time = new Date().toLocaleTimeString('vi', { hour12: false });
+        
+        var logClass = 'log-info';
+        if (msg.msg.includes('✅') || msg.msg.includes('Done')) logClass = 'log-success';
+        if (msg.msg.includes('❌') || msg.msg.includes('Error')) logClass = 'log-error';
+        
+        log.innerHTML += `
+            <div>
+                <span class="log-time">[${escapeHtml(time)}]</span> 
+                <span class="${escapeHtml(logClass)}">${escapeHtml(msg.msg)}</span>
+            </div>
+        `;
+        log.scrollTop = log.scrollHeight;
+    });
+
+    // ============================================
+    // 🚀 INITIALIZATION
+    // ============================================
+    console.log('%c🤖 Robot Control + AI Detection System', 'font-size: 18px; color: #00e5ff; font-weight: bold;');
+    console.log('%c⚡ System Ready with YOLOv8', 'font-size: 14px; color: #00ff88;');
+</script>
+
+</body>
+</html>
